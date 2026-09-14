@@ -12,3 +12,11 @@ git branch
 
 git status
 
+
+**To merge your current branch into the main branch**
+run git checkout main,
+git merge branch-name,
+and then git push.
+
+git pull origin main (to avoid conflicts)
+
