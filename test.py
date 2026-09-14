@@ -1,2 +1,3 @@
 class Maze:
+    hello world
 
