@@ -1,4 +1,3 @@
-import config
 import random
 
 NORTH = 0b0001  # 1
