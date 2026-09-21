@@ -39,22 +39,32 @@ class MazeGenerator:
 
     def generate(self) -> List[str]:
         """" Runs the entire structural design cycle. """
-        # Sync the random number generator instance if seed changed externally
-        self.rng = random.Random(self.seed)
-        # 1. Clear canvas and carve a clean spanning tree backbone
-        self.grid = [[15 for _ in range(self.width)] for _ in range(self.height)]
-        self.pattern_42_cells.clear()
-        self.carve_dfs(self.entry)
+        max_attempts = 1000
+        attempt = 0
 
-        # 2. Apply Pac-man layout configuration(corners, loops, no dead-ends)
-        self._apply_board_rules()
+        while attempt < max_attempts:
+            attempt += 1
+            # 1. Clear canvas and carve a clean spanning tree backbone
+            self.grid = [[15 for _ in range(self.width)] for _ in range(self.height)]
+            self.pattern_42_cells.clear()
+            # 2. Carve the structural tree backbone
+            self.carve_dfs(self.entry)
+            # 3. Apply Pac-man layout configuration(corners, loops, no dead-ends)
+            self._apply_board_rules()
+            # 4. Embed explicit closed-cell text patterns into layout centers
+            self._inject_42_pattern()
+            # 5. Test if the maze can be solved
+            self.solution_path = self.solve()
+            if self.solution_path:
+                return self.solution_path
+            # if path is empty, the solution was blocked by '42'
+            # shuffle the seed state to whuffle walls for next attempt
+            # Sync the random number generator instance if seed changed externally
+            self.seed = self.rng.randint(1, 99999)
+            self.rng = random.Random(self.seed)
 
-        # 3. Embed explicit closed-cell text patterns into layout centers
-        self._inject_42_pattern()
-
-        # 4. Map and track the absolute shortest remaining valid escape path
-        self.solution_path = self.solve()
-        return self.solution_path
+        raise RuntimeError("Failed to generate a solvable layout after "
+                          f"{max_attempts} attempts.")
 
 
     def carve_dfs(self, start_cell: Tuple[int, int]) -> None:
