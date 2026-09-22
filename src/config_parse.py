@@ -4,6 +4,7 @@ from random import seed
 
 def config_read(path: str):
     seed = 42
+    width, height, entry, exit, output_file, perfect = None, None, None, None, None, None
     try:
         with open(path) as file:
             text = file.read().split('\n')
@@ -63,18 +64,73 @@ def config_read(path: str):
     except (OSError, ValueError):
         return "ERROR"
 
-def config_parse(width: int, height: int, entry: tuple, exit: tuple, output_file: str, perfect: bool, seed: int):
+def config_parse(
+    width: int | None,
+    height: int | None,
+    entry: tuple[int, int] | None,
+    exit_pos: tuple[int, int] | None,
+    output_file: str | None,
+    perfect: bool | None,
+    seed: int | None,
+) -> (
+    tuple[
+        int,
+        int,
+        tuple[int, int],
+        tuple[int, int],
+        str,
+        bool,
+        int,
+    ]
+    | str
+):
+    # Check mandatory values.
+    if (
+        width is None
+        or height is None
+        or entry is None
+        or exit_pos is None
+        or output_file is None
+        or perfect is None
+    ):
+        return "ERROR"
 
+    # Check maze dimensions.
     if width <= 0 or height <= 0:
         return "ERROR"
 
-    if entry[0] < 0 or entry[0] >= width or entry[1] < 0 or entry[1] >= height:
+    # Check entry coordinates.
+    if (
+        entry[0] < 0
+        or entry[0] >= width
+        or entry[1] < 0
+        or entry[1] >= height
+    ):
         return "ERROR"
 
-    if exit[0] < 0 or exit[0] >= width or exit[1] < 0 or exit[1] >= height:
+    # Check exit coordinates.
+    if (
+        exit_pos[0] < 0
+        or exit_pos[0] >= width
+        or exit_pos[1] < 0
+        or exit_pos[1] >= height
+    ):
         return "ERROR"
 
+    # Entry and exit must be different.
+    if entry == exit_pos:
+        return "ERROR"
+
+    # Output filename cannot be empty.
     if not output_file:
         return "ERROR"
 
-    return (width, height, entry, exit, output_file, perfect, seed)
+    return (
+        width,
+        height,
+        entry,
+        exit_pos,
+        output_file,
+        perfect,
+        seed,
+    )

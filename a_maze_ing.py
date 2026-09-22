@@ -1,11 +1,18 @@
 import sys
+from pathlib import Path
+
+
+SRC_PATH = Path(__file__).resolve().parent / "src"
+
+if str(SRC_PATH) not in sys.path:
+    sys.path.insert(0, str(SRC_PATH))
 
 from carving_perfect import carve_perfect_maze, create_table, get_blocked_cells
 from carving_pacman import braid_maze
 from config_parse import config_parse, config_read
 from display import display_maze
 from export_maze import export_maze
-from solve_dfs import solve_maze_dfs
+from solve_bfs import solve_maze_bfs
 
 
 def main() -> None:
@@ -38,10 +45,6 @@ def main() -> None:
             perfect,
             seed,
         ) = validated_config
-
-        if entry == exit_pos:
-            print("Error: ENTRY and EXIT must be different")
-            return
 
 # Create maze
         maze = create_table(height, width)
@@ -81,7 +84,7 @@ def main() -> None:
         exit_rc = (exit_y, exit_x)
 
         # Find the solution.
-        path = solve_maze_dfs(
+        path = solve_maze_bfs(
             maze,
             entry_rc,
             exit_rc,
@@ -115,6 +118,9 @@ def main() -> None:
             entry_rc,
             exit_rc,
             path,
+            perfect,
+            seed,
+            output_file,
         )
 
     except (OSError, ValueError, IndexError, UnboundLocalError) as error:

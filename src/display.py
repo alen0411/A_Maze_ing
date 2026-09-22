@@ -1,6 +1,17 @@
 from mlx import Mlx
 
-from carving_perfect import EAST, NORTH, SOUTH, WEST
+from carving_pacman import braid_maze
+from carving_perfect import (
+    EAST,
+    NORTH,
+    SOUTH,
+    WEST,
+    carve_perfect_maze,
+    create_table,
+    get_blocked_cells,
+)
+from export_maze import export_maze
+from solve_bfs import solve_maze_bfs
 
 
 CELL_SIZE = 30
@@ -23,6 +34,7 @@ TEXT_COLOR = 0xFFFFFFFF
 KEY_ESC = 65307
 KEY_SPACE = 32
 KEY_C = 99
+KEY_R = 114
 
 
 class MazeDisplay:
@@ -34,12 +46,19 @@ class MazeDisplay:
         entry: tuple[int, int],
         exit_pos: tuple[int, int],
         path: list[tuple[int, int]],
+        perfect: bool,
+        seed: int,
+        output_file: str,
     ) -> None:
         """Initialize the maze display."""
         self.maze = maze
         self.entry = entry
         self.exit_pos = exit_pos
         self.path = path
+
+        self.perfect = perfect
+        self.seed = seed
+        self.output_file = output_file
 
         self.height = len(maze)
         self.width = len(maze[0])
@@ -66,7 +85,9 @@ class MazeDisplay:
         self.mlx_ptr = self.mlx.mlx_init()
 
         if self.mlx_ptr is None:
-            raise RuntimeError("Could not initialize MiniLibX")
+            raise RuntimeError(
+                "Could not initialize MiniLibX"
+            )
 
         self.win_ptr = self.mlx.mlx_new_window(
             self.mlx_ptr,
@@ -76,7 +97,9 @@ class MazeDisplay:
         )
 
         if self.win_ptr is None:
-            raise RuntimeError("Could not create MiniLibX window")
+            raise RuntimeError(
+                "Could not create MiniLibX window"
+            )
 
     def cell_origin(
         self,
@@ -214,11 +237,13 @@ class MazeDisplay:
 
         for row in range(self.height):
             for col in range(self.width):
-
                 if self.maze[row][col] != 0xF:
                     continue
 
-                x, y = self.cell_origin(row, col)
+                x, y = self.cell_origin(
+                    row,
+                    col,
+                )
 
                 self.draw_rectangle(
                     x + padding,
@@ -237,8 +262,15 @@ class MazeDisplay:
         row1, col1 = first
         row2, col2 = second
 
-        x1, y1 = self.cell_center(row1, col1)
-        x2, y2 = self.cell_center(row2, col2)
+        x1, y1 = self.cell_center(
+            row1,
+            col1,
+        )
+
+        x2, y2 = self.cell_center(
+            row2,
+            col2,
+        )
 
         thickness = 5
         half = thickness // 2
@@ -311,13 +343,18 @@ class MazeDisplay:
 
     def draw_header(self) -> None:
         """Draw controls at the top of the window."""
+        text = (
+            f"SPACE: path   C: colour   R: new maze   "
+            f"ESC: quit   Seed: {self.seed}"
+        )
+
         self.mlx.mlx_string_put(
             self.mlx_ptr,
             self.win_ptr,
             MARGIN,
             20,
             TEXT_COLOR,
-            "SPACE: path   C: colour   ESC: quit",
+            text,
         )
 
     def render(self) -> None:
@@ -335,10 +372,11 @@ class MazeDisplay:
             self.draw_path()
 
         self.draw_walls()
-
         self.draw_entry_exit()
 
-        self.mlx.mlx_do_sync(self.mlx_ptr)
+        self.mlx.mlx_do_sync(
+            self.mlx_ptr,
+        )
 
     def toggle_path(self) -> None:
         """Show or hide the solution path."""
@@ -348,13 +386,91 @@ class MazeDisplay:
     def change_wall_color(self) -> None:
         """Change maze wall colour."""
         self.wall_color_index += 1
-        self.wall_color_index %= len(WALL_COLORS)
+        self.wall_color_index %= len(
+            WALL_COLORS
+        )
+
+        self.needs_redraw = True
+
+    def regenerate_maze(self) -> None:
+        """Generate and display a new maze."""
+        new_seed = self.seed + 1
+
+        new_maze = create_table(
+            self.height,
+            self.width,
+        )
+
+        blocked_cells = get_blocked_cells(
+            new_maze
+        )
+
+        # Display coordinates are (row, col).
+        # Generator/export coordinates are (x, y).
+        entry_xy = (
+            self.entry[1],
+            self.entry[0],
+        )
+
+        exit_xy = (
+            self.exit_pos[1],
+            self.exit_pos[0],
+        )
+
+        carve_perfect_maze(
+            new_maze,
+            blocked_cells,
+            entry_xy,
+            new_seed,
+        )
+
+        if not self.perfect:
+            braid_maze(
+                new_maze,
+                blocked_cells,
+                new_seed,
+            )
+
+        new_path = solve_maze_bfs(
+            new_maze,
+            self.entry,
+            self.exit_pos,
+        )
+
+        if not new_path:
+            print(
+                "Error: no path found in "
+                "regenerated maze"
+            )
+            return
+
+        self.maze = new_maze
+        self.path = new_path
+        self.seed = new_seed
+
+        export_maze(
+            self.maze,
+            entry_xy,
+            exit_xy,
+            self.path,
+            self.output_file,
+        )
+
+        print(
+            "\nNew maze generated successfully"
+        )
+        print(f"Seed: {self.seed}")
+        print(
+            f"Path length: {len(self.path)}"
+        )
 
         self.needs_redraw = True
 
     def close(self) -> None:
         """Stop the MiniLibX loop."""
-        self.mlx.mlx_loop_exit(self.mlx_ptr)
+        self.mlx.mlx_loop_exit(
+            self.mlx_ptr
+        )
 
     def run(self) -> None:
         """Start the graphical interface."""
@@ -376,7 +492,9 @@ class MazeDisplay:
             self,
         )
 
-        self.mlx.mlx_loop(self.mlx_ptr)
+        self.mlx.mlx_loop(
+            self.mlx_ptr
+        )
 
 
 def on_key(
@@ -393,10 +511,15 @@ def on_key(
     elif keycode == KEY_C:
         display.change_wall_color()
 
+    elif keycode == KEY_R:
+        display.regenerate_maze()
+
     return 0
 
 
-def on_loop(display: MazeDisplay) -> int:
+def on_loop(
+    display: MazeDisplay,
+) -> int:
     """Render the window whenever a redraw is required."""
     if display.needs_redraw:
         display.render()
@@ -405,7 +528,9 @@ def on_loop(display: MazeDisplay) -> int:
     return 0
 
 
-def on_expose(display: MazeDisplay) -> int:
+def on_expose(
+    display: MazeDisplay,
+) -> int:
     """Request a redraw when the window is exposed."""
     display.needs_redraw = True
 
@@ -417,6 +542,9 @@ def display_maze(
     entry: tuple[int, int],
     exit_pos: tuple[int, int],
     path: list[tuple[int, int]],
+    perfect: bool,
+    seed: int,
+    output_file: str,
 ) -> None:
     """Display a maze using MiniLibX."""
     display = MazeDisplay(
@@ -424,6 +552,9 @@ def display_maze(
         entry,
         exit_pos,
         path,
+        perfect,
+        seed,
+        output_file,
     )
 
     display.run()
