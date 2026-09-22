@@ -1,6 +1,6 @@
 *This project has been created as part of the 42 curriculum by agaube and palvare2*
 
-
+---
 ## Project Description
 
 A customizable maze generator and solver written in Python, developed as part of the 42 curriculum.
@@ -18,6 +18,7 @@ pip-installable `mazegen` package.
 - **Hexadecimal Encoding:** Converts and exports structural layouts into strict, evaluation-ready hex string outputs.
 - **Task Automation:** Fully integrated with a local `Makefile` workflow for swift environment setup, testing, linting, and execution.
 
+
 ---
 
 ## Repository Structure
@@ -34,8 +35,8 @@ The repository includes the following primary files and assets required for comp
 *   `README.md`: The main documentation file providing an architectural overview, installation guides, and execution rules.
 *   `Setup.py`: The build configuration script used by setuptools to package, build, and compile the `mazegen` distribution bundle.
 
----
 
+---
 
 ## Instructions & Requirements
 
@@ -79,16 +80,22 @@ SEED            = 42
 - `PERFECT`: Boolean flag. `True` creates a clean single-solution environment, while `False` generates loop arrays.
 - `SEED`: Optional numeric anchor to lock in deterministic, replicable random generation.
 
+
 ---
 
-## Maze Generator Module
+## Maze Generator Module (ToDo)
 
 ### `MazeGenerator` Class Interface
+
+- Instantiate and use your generator, with at least a basic example.
+- Pass custom parameters (e.g., size, seed).
+- Access the generated structure, and access at least a solution
 
 ### Integration Sample
 ```python
 from a_maze_ing import MazeGenerator
 ```
+
 ---
 
 ## Team & Project Management
@@ -105,6 +112,15 @@ We discussed each part together and decided on individual responsibilities while
 * **The Shift to Graphics:** We started with a simple terminal-based text model but upgraded the project to use a MiniLibX (MLX) graphical interface with smooth pixel rendering.
 * **What Worked Well:** Collaboration, Clean object-oriented design, fast UI updates, clear type hints, and testing strategy.
 * **Future Improvements:** Adding keyboard controls for interactive players, window resizing support, and expanding test coverage, automated testing.
+
+---
+
+## License
+
+MIT License (MIT) Copyright © 2026
+
+A short, permissive software license that lets anyone use, modify, and sell the code for any purpose, as long as they include your original copyright notice.
+
 
 ---
 
