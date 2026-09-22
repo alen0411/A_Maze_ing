@@ -1,143 +1,124 @@
-from carving import (
-    carve_perfect_maze,
-    create_table,
-    get_blocked_cells,
-)
+import sys
+
+from carving_perfect import carve_perfect_maze, create_table, get_blocked_cells
+from carving_pacman import braid_maze
+from config_parse import config_parse, config_read
 from display import display_maze
-from solve import solve_maze_dfs
+from export_maze import export_maze
+from solve_dfs import solve_maze_dfs
 
 
 def main() -> None:
-    """Generate, solve and display a maze."""
+# Check command line arguments.
+    if len(sys.argv) != 2:
+        print("Usage: python3 src/main.py config.txt")
+        return
 
-    # -------------------------------------------------------
-    # Temporary configuration.
-    # Later these values will come from config.txt.
-    # -------------------------------------------------------
+    config_path = sys.argv[1]
 
-    width = 20
-    height = 15
+    try:
+        config = config_read(config_path)
 
-    entry = (0, 0)
-    exit_pos = (19, 14)
+        if config == "ERROR":
+            print("Error: invalid configuration file")
+            return
 
-    seed = 45
-    perfect = True
+        validated_config = config_parse(*config)
 
-    # -------------------------------------------------------
-    # Create maze.
-    # -------------------------------------------------------
+        if validated_config == "ERROR":
+            print("Error: invalid configuration values")
+            return
 
-    maze = create_table(
-        height,
-        width,
-    )
+        (
+            width,
+            height,
+            entry,
+            exit_pos,
+            output_file,
+            perfect,
+            seed,
+        ) = validated_config
 
-    # -------------------------------------------------------
-    # Create the 42 pattern.
-    # -------------------------------------------------------
+        if entry == exit_pos:
+            print("Error: ENTRY and EXIT must be different")
+            return
 
-    blocked_cells = get_blocked_cells(maze)
+# Create maze
+        maze = create_table(height, width)
 
-    entry_x, entry_y = entry
-    exit_x, exit_y = exit_pos
+        blocked_cells = get_blocked_cells(maze)
 
-    if blocked_cells[entry_y][entry_x]:
-        raise ValueError(
-            "Entry cannot be inside the 42 pattern"
-        )
+        entry_x, entry_y = entry
+        exit_x, exit_y = exit_pos
 
-    if blocked_cells[exit_y][exit_x]:
-        raise ValueError(
-            "Exit cannot be inside the 42 pattern"
-        )
+        if blocked_cells[entry_y][entry_x]:
+            print("Error: ENTRY cannot be inside the 42 pattern")
+            return
 
-    # -------------------------------------------------------
-    # Generate maze.
-    # -------------------------------------------------------
+        if blocked_cells[exit_y][exit_x]:
+            print("Error: EXIT cannot be inside the 42 pattern")
+            return
 
-    if perfect:
+# First generate a perfect maze.
         carve_perfect_maze(
             maze,
             blocked_cells,
             entry,
             seed,
         )
-    else:
-        raise NotImplementedError(
-            "PERFECT=False is not implemented yet"
-        )
 
-    # -------------------------------------------------------
-    # Print hexadecimal representation for debugging.
-    # -------------------------------------------------------
-
-    print("\nMaze generated:\n")
-
-    for row in maze:
-        print(
-            "".join(
-                f"{cell:X}"
-                for cell in row
+# Convert perfect maze to a pacman-style maze by removing walls from dead ends.
+        if not perfect:
+            braid_maze(
+                maze,
+                blocked_cells,
+                seed,
             )
+
+        # Config coordinates are (x, y).
+        # Solver/display coordinates are (row, col).
+        entry_rc = (entry_y, entry_x)
+        exit_rc = (exit_y, exit_x)
+
+        # Find the solution.
+        path = solve_maze_dfs(
+            maze,
+            entry_rc,
+            exit_rc,
         )
 
-    # -------------------------------------------------------
-    # Convert config coordinates:
-    #
-    # config:   (x, y)
-    # internal: (row, col)
-    # -------------------------------------------------------
+        if not path:
+            print("Error: no path found between ENTRY and EXIT")
+            return
 
-    entry_rc = (
-        entry_y,
-        entry_x,
-    )
-
-    exit_rc = (
-        exit_y,
-        exit_x,
-    )
-
-    # -------------------------------------------------------
-    # Solve maze.
-    # -------------------------------------------------------
-
-    path = solve_maze_dfs(
-        maze,
-        entry_rc,
-        exit_rc,
-    )
-
-    if not path:
-        raise ValueError(
-            "No path found between entry and exit"
+        # Write maze to output file.
+        export_maze(
+            maze,
+            entry,
+            exit_pos,
+            path,
+            output_file,
         )
 
-    # -------------------------------------------------------
-    # Debug information.
-    # -------------------------------------------------------
+        print("\nMaze generated successfully")
+        print(f"Size: {width}x{height}")
+        print(f"Seed: {seed}")
+        print(f"Entry: {entry}")
+        print(f"Exit: {exit_pos}")
+        print(f"Perfect: {perfect}")
+        print(f"Output file: {output_file}")
+        print(f"Path length: {len(path)}")
 
-    print("\nMaze information:")
-    print(f"Size: {width}x{height}")
-    print(f"Seed: {seed}")
-    print(f"Entry: {entry}")
-    print(f"Exit: {exit_pos}")
-    print(f"Path length: {len(path)}")
+        # Display with MiniLibX.
+        display_maze(
+            maze,
+            entry_rc,
+            exit_rc,
+            path,
+        )
 
-    print("\nPath:")
-    print(path)
-
-    # -------------------------------------------------------
-    # Display using MiniLibX.
-    # -------------------------------------------------------
-
-    display_maze(
-        maze,
-        entry_rc,
-        exit_rc,
-        path,
-    )
+    except (OSError, ValueError, IndexError, UnboundLocalError) as error:
+        print(f"Error: {error}")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 from mlx import Mlx
 
-from carving import EAST, NORTH, SOUTH, WEST
+from carving_perfect import EAST, NORTH, SOUTH, WEST
 
 
 CELL_SIZE = 30
