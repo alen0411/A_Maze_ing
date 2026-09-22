@@ -1,3 +1,0 @@
-class Maze:
-    hello world
-

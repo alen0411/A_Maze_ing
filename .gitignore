@@ -1,5 +1,13 @@
-__pycache__
-.mypy_cache
+# Python cache files
+__pycache__/
+*.pyc
 
-venv
-.venv
+# Static type checker cache
+.mypy_cache/
+
+# Local virtual environments
+venv/
+.venv/
+
+# Project generated outputs
+maze.txt
