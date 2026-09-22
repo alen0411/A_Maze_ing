@@ -81,7 +81,7 @@ SEED            = 42
 
 ---
 
-## Maze Generator Module API
+## Maze Generator Module
 
 ### `MazeGenerator` Class Interface
 
